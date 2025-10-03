@@ -1,0 +1,72 @@
+import React from 'react';
+import { LineChart, Line, ResponsiveContainer } from 'recharts';
+import { Metric } from '../types';
+
+interface MetricCardProps {
+  metric: Metric;
+  onEdit?: (metric: Metric) => void;
+  onDelete?: (metricId: string) => void;
+}
+
+const MetricCard: React.FC<MetricCardProps> = ({ metric, onEdit, onDelete }) => {
+  const formatValue = (value: number, unit?: string) => {
+    if (unit === '$') {
+      return `$${value.toLocaleString()}`;
+    }
+    if (unit === '%') {
+      return `${value}%`;
+    }
+    return value.toLocaleString();
+  };
+
+  const getChangeColor = (changePercent?: number) => {
+    if (!changePercent) return 'text-gray-500';
+    return changePercent >= 0 ? 'text-red-600' : 'text-green-600';
+  };
+
+  const getChangeBgColor = (changePercent?: number) => {
+    if (!changePercent) return 'bg-gray-100';
+    return changePercent >= 0 ? 'bg-red-100' : 'bg-green-100';
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
+      <div className="flex justify-between items-start mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{metric.title}</h3>
+        {metric.changePercent !== undefined && (
+          <div className="text-right">
+            <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getChangeBgColor(metric.changePercent)} dark:bg-opacity-20 ${getChangeColor(metric.changePercent)} dark:text-opacity-90`}>
+              {metric.changePercent > 0 ? '+' : ''}{metric.changePercent.toFixed(2)}%
+            </div>
+            {metric.changeTimeframe && (
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{metric.changeTimeframe}</div>
+            )}
+          </div>
+        )}
+      </div>
+      
+      <div className="mb-4">
+        <div className="text-3xl font-bold text-gray-900 dark:text-gray-50">
+          {formatValue(metric.value, metric.unit)}
+        </div>
+      </div>
+      
+      <div className="h-20">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={metric.data}>
+            <Line 
+              type="monotone" 
+              dataKey="value" 
+              stroke={metric.color || '#3b82f6'} 
+              strokeWidth={2}
+              dot={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
+export default MetricCard;
+
