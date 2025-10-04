@@ -6,8 +6,6 @@ import {
   updateDoc, 
   deleteDoc, 
   onSnapshot,
-  query,
-  orderBy,
   Timestamp 
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
@@ -44,15 +42,30 @@ export function useFirebaseMetrics() {
 
   // Load monthly entries
   useEffect(() => {
-    const q = query(collection(db, 'monthlyEntries'), orderBy('year', 'desc'), orderBy('month', 'desc'));
+    // Simple query without any ordering to avoid index requirements
     const unsubscribe = onSnapshot(
-      q,
+      collection(db, 'monthlyEntries'),
       (snapshot) => {
         const entriesData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as unknown as MonthlyMetricEntry[];
-        setMonthlyEntries(entriesData);
+        
+        // Simple sort by year and month in JavaScript
+        const sortedEntries = entriesData.sort((a, b) => {
+          // First sort by year (descending)
+          if (a.year !== b.year) {
+            return b.year - a.year;
+          }
+          // Then by month (descending)
+          const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June',
+                             'July', 'August', 'September', 'October', 'November', 'December'];
+          const aMonthIndex = monthOrder.indexOf(a.month);
+          const bMonthIndex = monthOrder.indexOf(b.month);
+          return bMonthIndex - aMonthIndex;
+        });
+        
+        setMonthlyEntries(sortedEntries);
       },
       (err) => {
         console.error('Error loading monthly entries:', err);
