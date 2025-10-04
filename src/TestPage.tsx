@@ -1,4 +1,5 @@
 import React from 'react';
+import { resetMetricsCollection } from './utils/initializeFirebase';
 
 export default function TestPage() {
   return (
@@ -32,20 +33,41 @@ export default function TestPage() {
           <p>Measurement ID: {process.env.REACT_APP_FIREBASE_MEASUREMENT_ID ? '✅ Set' : '❌ Missing'}</p>
         </div>
       </div>
-      <button 
-        onClick={() => window.location.href = '/'}
-        style={{
-          background: '#3b82f6',
-          color: 'white',
-          border: 'none',
-          padding: '12px 24px',
-          borderRadius: '6px',
-          cursor: 'pointer',
-          fontSize: '16px'
-        }}
-      >
-        Go to Dashboard
-      </button>
+      <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+        <button 
+          onClick={() => window.location.href = '/'}
+          style={{
+            background: '#3b82f6',
+            color: 'white',
+            border: 'none',
+            padding: '12px 24px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '16px'
+          }}
+        >
+          Go to Dashboard
+        </button>
+        <button 
+          onClick={async () => {
+            if (window.confirm('This will delete all metrics and reset to sample data. Continue?')) {
+              await resetMetricsCollection();
+              window.alert('Metrics reset! Refresh the page to see changes.');
+            }
+          }}
+          style={{
+            background: '#dc2626',
+            color: 'white',
+            border: 'none',
+            padding: '12px 24px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '16px'
+          }}
+        >
+          🔄 Reset Metrics
+        </button>
+      </div>
     </div>
   );
 }
