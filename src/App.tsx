@@ -65,8 +65,8 @@ function Dashboard() {
         case 'customers':
           newValue = entry.customers;
           break;
-        case 'active-subscriptions':
-          newValue = entry.activeSubscriptions;
+        case 'average-ltv':
+          newValue = entry.averageLtv;
           break;
         case 'new-trials':
           newValue = entry.newTrials;

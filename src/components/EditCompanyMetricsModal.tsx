@@ -21,7 +21,7 @@ const EditCompanyMetricsModal: React.FC<EditCompanyMetricsModalProps> = ({
     mrr: 0,
     trialToPaid: 0,
     customers: 1350,
-    activeSubscriptions: 1100,
+    averageLtv: 1100,
     newTrials: 65,
     churnRate: 1.5
   });
@@ -36,7 +36,7 @@ const EditCompanyMetricsModal: React.FC<EditCompanyMetricsModalProps> = ({
         mrr: 0,
         trialToPaid: 0,
         customers: 1350,
-        activeSubscriptions: 1100,
+        averageLtv: 1100,
         newTrials: 65,
         churnRate: 1.5
       });
@@ -168,13 +168,14 @@ const EditCompanyMetricsModal: React.FC<EditCompanyMetricsModalProps> = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Active Subscriptions
+                  Average LTV ($)
                 </label>
                 <input
                   type="number"
                   min="0"
-                  value={formData.activeSubscriptions}
-                  onChange={(e) => setFormData({ ...formData, activeSubscriptions: parseInt(e.target.value) || 0 })}
+                  step="0.01"
+                  value={formData.averageLtv}
+                  onChange={(e) => setFormData({ ...formData, averageLtv: parseFloat(e.target.value) || 0 })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>

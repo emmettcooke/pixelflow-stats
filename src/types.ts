@@ -23,7 +23,7 @@ export interface MonthlyMetricEntry {
   mrr: number;
   trialToPaid: number; // Changed from revenue to trialToPaid
   customers: number;
-  activeSubscriptions: number;
+  averageLtv: number; // Changed from activeSubscriptions to averageLtv
   newTrials: number;
   churnRate: number;
 }

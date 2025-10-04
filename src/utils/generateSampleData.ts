@@ -41,8 +41,8 @@ export const generateSampleMetrics = (): Metric[] => [
     color: '#3b82f6'
   },
   {
-    id: 'active-subscriptions',
-    title: 'Active Subscriptions',
+    id: 'average-ltv',
+    title: 'Average LTV',
     value: 23,
     changePercent: -98.08,
     changeTimeframe: 'Last 30 days',
