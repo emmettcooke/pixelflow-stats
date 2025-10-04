@@ -60,7 +60,7 @@ function Dashboard() {
           newValue = entry.mrr;
           break;
         case 'trial-to-paid':
-          newValue = entry.newTrials > 0 ? (entry.activeSubscriptions / entry.newTrials) * 100 : 0;
+          newValue = entry.trialToPaid;
           break;
         case 'customers':
           newValue = entry.customers;

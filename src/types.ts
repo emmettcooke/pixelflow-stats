@@ -21,7 +21,7 @@ export interface MonthlyMetricEntry {
   month: string;
   year: number;
   mrr: number;
-  revenue: number;
+  trialToPaid: number; // Changed from revenue to trialToPaid
   customers: number;
   activeSubscriptions: number;
   newTrials: number;
