@@ -11,6 +11,7 @@ import SortableMetricCard from './components/SortableMetricCard';
 import EditCompanyMetricsModal from './components/EditCompanyMetricsModal';
 import Login from './components/Login';
 import ErrorBoundary from './ErrorBoundary';
+import TestPage from './TestPage';
 
 function Dashboard() {
   const [darkMode, setDarkMode] = useLocalStorage('darkMode', false);
@@ -181,6 +182,11 @@ function Dashboard() {
 
 function App() {
   const { currentUser } = useAuth();
+
+  // Show test page first to debug deployment
+  if (window.location.search.includes('test=true')) {
+    return <TestPage />;
+  }
 
   if (!currentUser) {
     return <Login darkMode={false} />;
