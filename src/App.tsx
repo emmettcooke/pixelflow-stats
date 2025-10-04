@@ -32,11 +32,6 @@ function Dashboard() {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
-  // Initialize Firebase data on first load
-  useEffect(() => {
-    initializeFirebaseData();
-  }, []);
-
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
   };
@@ -182,6 +177,11 @@ function Dashboard() {
 
 function App() {
   const { currentUser } = useAuth();
+
+  // Initialize Firebase data on first load
+  useEffect(() => {
+    initializeFirebaseData();
+  }, []);
 
   // Show test page first to debug deployment
   if (window.location.search.includes('test=true')) {
