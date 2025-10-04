@@ -23,7 +23,8 @@ export function useFirebaseMetrics() {
       collection(db, 'metrics'),
       (snapshot) => {
         const metricsData = snapshot.docs.map(doc => ({
-          id: doc.id,
+          id: doc.id, // Firebase document ID
+          docId: doc.id, // Keep Firebase document ID for updates
           ...doc.data()
         })) as unknown as Metric[];
         setMetrics(metricsData);

@@ -77,13 +77,20 @@ function Dashboard() {
       }
       
       if (newValue !== metric.value) {
-        await updateMetric(metric.id, { value: newValue });
+        // Use docId (Firebase document ID) for updates, fallback to id if docId not available
+        const documentId = metric.docId || metric.id;
+        await updateMetric(documentId, { value: newValue });
       }
     }
   };
 
   const handleDeleteMetric = async (metricId: string) => {
-    await deleteMetric(metricId);
+    // Find the metric to get its document ID
+    const metric = metrics.find(m => m.id === metricId);
+    if (metric) {
+      const documentId = metric.docId || metric.id;
+      await deleteMetric(documentId);
+    }
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -96,7 +103,8 @@ function Dashboard() {
     // Update order in Firebase
     const reorderedMetrics = arrayMove(metrics, oldIndex, newIndex);
     for (let i = 0; i < reorderedMetrics.length; i++) {
-      await updateMetric(reorderedMetrics[i].id, { order: i });
+      const documentId = reorderedMetrics[i].docId || reorderedMetrics[i].id;
+      await updateMetric(documentId, { order: i });
     }
   };
 

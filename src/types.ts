@@ -5,6 +5,7 @@ export interface MetricDataPoint {
 
 export interface Metric {
   id: string;
+  docId?: string; // Firebase document ID for updates
   title: string;
   value: number;
   unit?: string;
