@@ -3,9 +3,8 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEn
 import { SortableContext, rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useFirebaseMetrics } from './hooks/useFirebaseMetrics';
-import { generateSampleMetrics } from './utils/generateSampleData';
 import { initializeFirebaseData } from './utils/initializeFirebase';
-import { Metric, MonthlyMetricEntry } from './types';
+import { MonthlyMetricEntry } from './types';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Header from './components/Header';
 import SortableMetricCard from './components/SortableMetricCard';
@@ -20,7 +19,6 @@ function Dashboard() {
     monthlyEntries,
     loading,
     error,
-    addMetric,
     updateMetric,
     deleteMetric,
     addMonthlyEntry,
@@ -28,8 +26,6 @@ function Dashboard() {
   } = useFirebaseMetrics();
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState('October');
-  const [selectedYear, setSelectedYear] = useState(2025);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );

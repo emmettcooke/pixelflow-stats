@@ -2,15 +2,15 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
-// Your Firebase configuration
-// You'll need to replace these with your actual Firebase project config
+// Firebase configuration using environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyCf3Bh3pVAlDpN2vAwoiGoipmJ34q9t5_k",
-  authDomain: "pixelflowstats.firebaseapp.com",
-  projectId: "pixelflowstats",
-  storageBucket: "pixelflowstats.firebasestorage.app",
-  messagingSenderId: "1015584736303",
-  appId: "1:1015584736303:web:611d9aa94b2a6126d432da"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
