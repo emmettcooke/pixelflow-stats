@@ -12,9 +12,11 @@ export interface Metric {
   changeTimeframe?: string;
   data: MetricDataPoint[];
   color?: string;
+  order?: number;
 }
 
 export interface MonthlyMetricEntry {
+  id?: string;
   month: string;
   year: number;
   mrr: number;

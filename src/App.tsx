@@ -1,17 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { useFirebaseMetrics } from './hooks/useFirebaseMetrics';
 import { generateSampleMetrics } from './utils/generateSampleData';
+import { initializeFirebaseData } from './utils/initializeFirebase';
 import { Metric, MonthlyMetricEntry } from './types';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Header from './components/Header';
 import SortableMetricCard from './components/SortableMetricCard';
 import EditCompanyMetricsModal from './components/EditCompanyMetricsModal';
+import Login from './components/Login';
 
-function App() {
+function Dashboard() {
   const [darkMode, setDarkMode] = useLocalStorage('darkMode', false);
-  const [metrics, setMetrics] = useLocalStorage('metrics', generateSampleMetrics());
-  const [monthlyEntries, setMonthlyEntries] = useLocalStorage<MonthlyMetricEntry[]>('monthlyEntries', []);
+  const { currentUser, logout } = useAuth();
+  const {
+    metrics,
+    monthlyEntries,
+    loading,
+    error,
+    addMetric,
+    updateMetric,
+    deleteMetric,
+    addMonthlyEntry,
+    updateMonthlyEntry
+  } = useFirebaseMetrics();
+  
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState('October');
   const [selectedYear, setSelectedYear] = useState(2025);
@@ -19,31 +34,33 @@ function App() {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
+  // Initialize Firebase data on first load
+  useEffect(() => {
+    initializeFirebaseData();
+  }, []);
+
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
   };
 
-  const handleSaveMetrics = (entry: MonthlyMetricEntry) => {
-    const existingIndex = monthlyEntries.findIndex(
+  const handleSaveMetrics = async (entry: MonthlyMetricEntry) => {
+    const existingEntry = monthlyEntries.find(
       e => e.month === entry.month && e.year === entry.year
     );
     
-    if (existingIndex >= 0) {
-      const updatedEntries = [...monthlyEntries];
-      updatedEntries[existingIndex] = entry;
-      setMonthlyEntries(updatedEntries);
+    if (existingEntry && existingEntry.id) {
+      await updateMonthlyEntry(existingEntry.id, entry);
     } else {
-      setMonthlyEntries([...monthlyEntries, entry]);
+      await addMonthlyEntry(entry);
     }
     
     // Update metrics with new data
     updateMetricsFromEntry(entry);
   };
 
-  const updateMetricsFromEntry = (entry: MonthlyMetricEntry) => {
-    const updatedMetrics = metrics.map(metric => {
+  const updateMetricsFromEntry = async (entry: MonthlyMetricEntry) => {
+    for (const metric of metrics) {
       let newValue = metric.value;
-      let newChangePercent = metric.changePercent;
       
       switch (metric.id) {
         case 'mrr':
@@ -66,28 +83,41 @@ function App() {
           break;
       }
       
-      return { ...metric, value: newValue };
-    });
-    
-    setMetrics(updatedMetrics);
+      if (newValue !== metric.value) {
+        await updateMetric(metric.id, { value: newValue });
+      }
+    }
   };
 
-  const handleDeleteMetric = (metricId: string) => {
-    setMetrics(metrics.filter(metric => metric.id !== metricId));
+  const handleDeleteMetric = async (metricId: string) => {
+    await deleteMetric(metricId);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const oldIndex = metrics.findIndex(m => m.id === active.id);
     const newIndex = metrics.findIndex(m => m.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
-    setMetrics(arrayMove(metrics, oldIndex, newIndex));
+    
+    // Update order in Firebase
+    const reorderedMetrics = arrayMove(metrics, oldIndex, newIndex);
+    for (let i = 0; i < reorderedMetrics.length; i++) {
+      await updateMetric(reorderedMetrics[i].id, { order: i });
+    }
   };
 
   const handleSettings = () => {
     // Placeholder for settings functionality
     console.log('Settings clicked');
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Failed to logout:', error);
+    }
   };
 
   return (
@@ -97,33 +127,49 @@ function App() {
         onToggleDarkMode={toggleDarkMode}
         onAddMetric={() => setIsEditModalOpen(true)}
         onSettings={handleSettings}
+        onLogout={handleLogout}
+        user={currentUser}
       />
       
       <main className="p-6">
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={metrics.map(m => m.id)} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {metrics.map((metric) => (
-                <SortableMetricCard
-                  key={metric.id}
-                  metric={metric}
-                  onDelete={handleDeleteMetric}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-        
-        {metrics.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-gray-500 text-lg mb-4">No metrics yet</div>
-            <button
-              onClick={() => setIsEditModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
-            >
-              Add Your First Metric
-            </button>
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            <strong>Error:</strong> {error}
           </div>
+        )}
+        
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-gray-500 text-lg">Loading metrics...</div>
+          </div>
+        ) : (
+          <>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={metrics.map(m => m.id)} strategy={rectSortingStrategy}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {metrics.map((metric) => (
+                    <SortableMetricCard
+                      key={metric.id}
+                      metric={metric}
+                      onDelete={handleDeleteMetric}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+            
+            {metrics.length === 0 && (
+              <div className="text-center py-12">
+                <div className="text-gray-500 text-lg mb-4">No metrics yet</div>
+                <button
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
+                >
+                  Add Your First Metric
+                </button>
+              </div>
+            )}
+          </>
         )}
       </main>
       
@@ -136,5 +182,21 @@ function App() {
   );
 }
 
-export default App;
+function App() {
+  const { currentUser } = useAuth();
+
+  if (!currentUser) {
+    return <Login darkMode={false} />;
+  }
+
+  return <Dashboard />;
+}
+
+export default function AppWithAuth() {
+  return (
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  );
+}
 
