@@ -10,6 +10,7 @@ import Header from './components/Header';
 import SortableMetricCard from './components/SortableMetricCard';
 import EditCompanyMetricsModal from './components/EditCompanyMetricsModal';
 import Login from './components/Login';
+import ErrorBoundary from './ErrorBoundary';
 
 function Dashboard() {
   const [darkMode, setDarkMode] = useLocalStorage('darkMode', false);
@@ -190,9 +191,11 @@ function App() {
 
 export default function AppWithAuth() {
   return (
-    <AuthProvider>
-      <App />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
