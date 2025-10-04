@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Header from './components/Header';
 import SortableMetricCard from './components/SortableMetricCard';
 import EditCompanyMetricsModal from './components/EditCompanyMetricsModal';
+import SettingsModal from './components/SettingsModal';
 import Login from './components/Login';
 import ErrorBoundary from './ErrorBoundary';
 import TestPage from './TestPage';
@@ -24,16 +25,27 @@ function Dashboard() {
     updateMetric,
     deleteMetric,
     addMonthlyEntry,
-    updateMonthlyEntry
+    updateMonthlyEntry,
+    deleteAllMetrics
   } = useFirebaseMetrics();
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState('October');
+  const [selectedYear, setSelectedYear] = useState(2025);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
+  };
+
+  // Find existing monthly entry for the selected month/year
+  const getExistingEntry = () => {
+    return monthlyEntries.find(
+      entry => entry.month === selectedMonth && entry.year === selectedYear
+    );
   };
 
   const handleSaveMetrics = async (entry: MonthlyMetricEntry) => {
@@ -109,8 +121,7 @@ function Dashboard() {
   };
 
   const handleSettings = () => {
-    // Placeholder for settings functionality
-    console.log('Settings clicked');
+    setIsSettingsModalOpen(true);
   };
 
   const handleLogout = async () => {
@@ -178,6 +189,17 @@ function Dashboard() {
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onSaveMetrics={handleSaveMetrics}
+        existingEntry={getExistingEntry()}
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+        onMonthChange={setSelectedMonth}
+        onYearChange={setSelectedYear}
+      />
+      
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        onDeleteAllMetrics={deleteAllMetrics}
       />
     </div>
   );

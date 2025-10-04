@@ -6,6 +6,8 @@ import {
   updateDoc, 
   deleteDoc, 
   onSnapshot,
+  getDocs,
+  writeBatch,
   Timestamp 
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
@@ -151,6 +153,39 @@ export function useFirebaseMetrics() {
     }
   };
 
+  const deleteAllMetrics = async () => {
+    try {
+      setLoading(true);
+      
+      // Delete all metrics
+      const metricsSnapshot = await getDocs(collection(db, 'metrics'));
+      if (!metricsSnapshot.empty) {
+        const batch = writeBatch(db);
+        metricsSnapshot.docs.forEach((docSnapshot) => {
+          batch.delete(docSnapshot.ref);
+        });
+        await batch.commit();
+      }
+
+      // Delete all monthly entries
+      const monthlySnapshot = await getDocs(collection(db, 'monthlyEntries'));
+      if (!monthlySnapshot.empty) {
+        const batch = writeBatch(db);
+        monthlySnapshot.docs.forEach((docSnapshot) => {
+          batch.delete(docSnapshot.ref);
+        });
+        await batch.commit();
+      }
+
+      console.log('All metrics and monthly entries deleted successfully');
+    } catch (err) {
+      console.error('Error deleting all data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete all data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     metrics,
     monthlyEntries,
@@ -160,6 +195,7 @@ export function useFirebaseMetrics() {
     updateMetric,
     deleteMetric,
     addMonthlyEntry,
-    updateMonthlyEntry
+    updateMonthlyEntry,
+    deleteAllMetrics
   };
 }

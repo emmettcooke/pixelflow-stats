@@ -7,17 +7,25 @@ interface EditCompanyMetricsModalProps {
   onClose: () => void;
   onSaveMetrics: (entry: MonthlyMetricEntry) => void;
   existingEntry?: MonthlyMetricEntry;
+  selectedMonth: string;
+  selectedYear: number;
+  onMonthChange: (month: string) => void;
+  onYearChange: (year: number) => void;
 }
 
 const EditCompanyMetricsModal: React.FC<EditCompanyMetricsModalProps> = ({ 
   isOpen, 
   onClose, 
   onSaveMetrics,
-  existingEntry 
+  existingEntry,
+  selectedMonth,
+  selectedYear,
+  onMonthChange,
+  onYearChange
 }) => {
   const [formData, setFormData] = useState<MonthlyMetricEntry>({
-    month: 'October',
-    year: 2025,
+    month: selectedMonth,
+    year: selectedYear,
     mrr: 0,
     trialToPaid: 0,
     customers: 1350,
@@ -31,8 +39,8 @@ const EditCompanyMetricsModal: React.FC<EditCompanyMetricsModalProps> = ({
       setFormData(existingEntry);
     } else {
       setFormData({
-        month: 'October',
-        year: 2025,
+        month: selectedMonth,
+        year: selectedYear,
         mrr: 0,
         trialToPaid: 0,
         customers: 1350,
@@ -41,7 +49,7 @@ const EditCompanyMetricsModal: React.FC<EditCompanyMetricsModalProps> = ({
         churnRate: 1.5
       });
     }
-  }, [existingEntry, isOpen]);
+  }, [existingEntry, isOpen, selectedMonth, selectedYear]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +92,11 @@ const EditCompanyMetricsModal: React.FC<EditCompanyMetricsModalProps> = ({
                 </label>
                 <select
                   value={formData.month}
-                  onChange={(e) => setFormData({ ...formData, month: e.target.value })}
+                  onChange={(e) => {
+                    const newMonth = e.target.value;
+                    setFormData({ ...formData, month: newMonth });
+                    onMonthChange(newMonth);
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {months.map(month => (
@@ -142,7 +154,11 @@ const EditCompanyMetricsModal: React.FC<EditCompanyMetricsModalProps> = ({
                 </label>
                 <select
                   value={formData.year}
-                  onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
+                  onChange={(e) => {
+                    const newYear = parseInt(e.target.value);
+                    setFormData({ ...formData, year: newYear });
+                    onYearChange(newYear);
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {years.map(year => (
