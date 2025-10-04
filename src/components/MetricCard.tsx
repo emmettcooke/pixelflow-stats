@@ -64,6 +64,30 @@ const MetricCard: React.FC<MetricCardProps> = ({ metric, onEdit, onDelete }) => 
           </LineChart>
         </ResponsiveContainer>
       </div>
+      
+      {/* Last 6 months display at the bottom */}
+      <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+          {(() => {
+            const months = [];
+            const currentDate = new Date();
+            for (let i = 5; i >= 0; i--) {
+              const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+              months.push(
+                <div key={i} className="text-center">
+                  <div className="font-medium">
+                    {date.toLocaleDateString('en-US', { month: 'short' })}
+                  </div>
+                  <div className="text-gray-400 dark:text-gray-500">
+                    {date.getFullYear()}
+                  </div>
+                </div>
+              );
+            }
+            return months;
+          })()}
+        </div>
+      </div>
     </div>
   );
 };
