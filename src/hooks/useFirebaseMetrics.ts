@@ -153,6 +153,18 @@ export function useFirebaseMetrics() {
     }
   };
 
+  const deleteMonthlyEntry = async (id: string) => {
+    try {
+      setLoading(true);
+      await deleteDoc(doc(db, 'monthlyEntries', id));
+    } catch (err) {
+      console.error('Error deleting monthly entry:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete monthly entry');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const deleteAllMetrics = async () => {
     try {
       setLoading(true);
@@ -196,6 +208,7 @@ export function useFirebaseMetrics() {
     deleteMetric,
     addMonthlyEntry,
     updateMonthlyEntry,
+    deleteMonthlyEntry,
     deleteAllMetrics
   };
 }

@@ -27,6 +27,7 @@ function Dashboard() {
     deleteMetric,
     addMonthlyEntry,
     updateMonthlyEntry,
+    deleteMonthlyEntry,
     deleteAllMetrics
   } = useFirebaseMetrics();
   
@@ -218,6 +219,20 @@ function Dashboard() {
     }
   }, [monthlyEntries, metrics, updateMetric]);
 
+  // Auto-regenerate charts when monthly entries change (but only after initial load)
+  const [hasInitialized, setHasInitialized] = useState(false);
+  useEffect(() => {
+    if (monthlyEntries.length > 0 && metrics.length > 0) {
+      if (hasInitialized) {
+        // Only regenerate if we've already initialized (prevents first load issues)
+        generateChartDataFromEntries();
+      } else {
+        setHasInitialized(true);
+        generateChartDataFromEntries();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monthlyEntries.length, metrics.length]);
 
   const handleDeleteMetric = async (metricId: string) => {
     // Find the metric to get its document ID
@@ -245,6 +260,11 @@ function Dashboard() {
 
   const handleSettings = () => {
     setIsSettingsModalOpen(true);
+  };
+
+  const handleDeleteMonthlyEntry = async (id: string) => {
+    await deleteMonthlyEntry(id);
+    // Charts will auto-regenerate when monthlyEntries updates via the useEffect
   };
 
   const handleViewChart = (metric: Metric) => {
@@ -329,6 +349,8 @@ function Dashboard() {
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
         onDeleteAllMetrics={deleteAllMetrics}
+        monthlyEntries={monthlyEntries}
+        onDeleteMonthlyEntry={handleDeleteMonthlyEntry}
       />
       
       <ChartModal

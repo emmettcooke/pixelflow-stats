@@ -28,10 +28,10 @@ const EditCompanyMetricsModal: React.FC<EditCompanyMetricsModalProps> = ({
     year: selectedYear,
     mrr: 0,
     trialToPaid: 0,
-    customers: 1350,
-    averageLtv: 1100,
-    newTrials: 65,
-    churnRate: 1.5
+    customers: 0,
+    averageLtv: 0,
+    newTrials: 0,
+    churnRate: 0
   });
 
   useEffect(() => {
@@ -43,10 +43,10 @@ const EditCompanyMetricsModal: React.FC<EditCompanyMetricsModalProps> = ({
         year: selectedYear,
         mrr: 0,
         trialToPaid: 0,
-        customers: 1350,
-        averageLtv: 1100,
-        newTrials: 65,
-        churnRate: 1.5
+        customers: 0,
+        averageLtv: 0,
+        newTrials: 0,
+        churnRate: 0
       });
     }
   }, [existingEntry, isOpen, selectedMonth, selectedYear]);

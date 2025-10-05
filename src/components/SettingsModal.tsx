@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
-import { X, Trash2, AlertTriangle } from 'lucide-react';
+import { X, Trash2, AlertTriangle, Calendar } from 'lucide-react';
+import { MonthlyMetricEntry } from '../types';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onDeleteAllMetrics: () => void;
+  monthlyEntries?: MonthlyMetricEntry[];
+  onDeleteMonthlyEntry?: (id: string) => void;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ 
   isOpen, 
   onClose, 
-  onDeleteAllMetrics 
+  onDeleteAllMetrics,
+  monthlyEntries = [],
+  onDeleteMonthlyEntry
 }) => {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
@@ -40,7 +45,53 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         
         <div className="p-6">
           {!showDeleteConfirmation ? (
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* Monthly Entries Management */}
+              {monthlyEntries && monthlyEntries.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Monthly Entries
+                  </h3>
+                  <div className="space-y-2">
+                    {monthlyEntries
+                      .sort((a, b) => {
+                        const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June',
+                                            'July', 'August', 'September', 'October', 'November', 'December'];
+                        if (a.year !== b.year) return b.year - a.year;
+                        return monthOrder.indexOf(b.month) - monthOrder.indexOf(a.month);
+                      })
+                      .map((entry) => (
+                        <div
+                          key={entry.id}
+                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                        >
+                          <div>
+                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {entry.month} {entry.year}
+                            </span>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              MRR: ${entry.mrr.toLocaleString()}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              if (entry.id && onDeleteMonthlyEntry && window.confirm(`Delete data for ${entry.month} ${entry.year}?`)) {
+                                onDeleteMonthlyEntry(entry.id);
+                              }
+                            }}
+                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                            title="Delete this month"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Delete All Danger Zone */}
               <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                 <div className="flex items-start">
                   <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 mr-3 flex-shrink-0" />
