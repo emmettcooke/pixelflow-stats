@@ -1,6 +1,5 @@
-import { collection, getDocs, addDoc, deleteDoc, doc, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, doc, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { generateSampleMetrics } from './generateSampleData';
 
 // Track initialization to prevent multiple calls
 let isInitialized = false;
@@ -57,21 +56,7 @@ export async function resetMetricsCollection() {
       console.log('All existing metrics deleted.');
     }
     
-    // Add fresh sample metrics
-    const sampleMetrics = generateSampleMetrics();
-    const batch = writeBatch(db);
-    
-    for (const metric of sampleMetrics) {
-      const docRef = doc(collection(db, 'metrics'));
-      batch.set(docRef, {
-        ...metric,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
-    }
-    
-    await batch.commit();
-    console.log('Fresh sample data added successfully!');
+    console.log('Metrics collection cleared. Dashboard will start with empty state.');
     
     // Reset initialization flag
     isInitialized = false;
@@ -92,19 +77,7 @@ export async function initializeFirebaseData() {
     const metricsSnapshot = await getDocs(collection(db, 'metrics'));
     
     if (metricsSnapshot.empty) {
-      console.log('Initializing Firebase with sample data...');
-      
-      // Add sample metrics
-      const sampleMetrics = generateSampleMetrics();
-      for (const metric of sampleMetrics) {
-        await addDoc(collection(db, 'metrics'), {
-          ...metric,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        });
-      }
-      
-      console.log('Sample data initialized successfully!');
+      console.log('No metrics found. Dashboard will start with empty state.');
     } else {
       console.log('Firebase already has data, checking for duplicates...');
       

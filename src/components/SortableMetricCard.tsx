@@ -7,9 +7,10 @@ import MetricCard from './MetricCard';
 interface SortableMetricCardProps {
   metric: Metric;
   onDelete?: (metricId: string) => void;
+  onViewChart?: (metric: Metric) => void;
 }
 
-const SortableMetricCard: React.FC<SortableMetricCardProps> = ({ metric, onDelete }) => {
+const SortableMetricCard: React.FC<SortableMetricCardProps> = ({ metric, onDelete, onViewChart }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: metric.id });
 
   const style: React.CSSProperties = {
@@ -22,7 +23,7 @@ const SortableMetricCard: React.FC<SortableMetricCardProps> = ({ metric, onDelet
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <MetricCard metric={metric} onDelete={onDelete} />
+      <MetricCard metric={metric} onDelete={onDelete} onViewChart={onViewChart} />
     </div>
   );
 };

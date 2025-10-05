@@ -6,9 +6,11 @@ interface MetricCardProps {
   metric: Metric;
   onEdit?: (metric: Metric) => void;
   onDelete?: (metricId: string) => void;
+  onViewChart?: (metric: Metric) => void;
+  currentMonth?: string;
 }
 
-const MetricCard: React.FC<MetricCardProps> = ({ metric, onEdit, onDelete }) => {
+const MetricCard: React.FC<MetricCardProps> = ({ metric, onEdit, onDelete, onViewChart, currentMonth }) => {
   const formatValue = (value: number, unit?: string) => {
     if (unit === '$') {
       return `$${value.toLocaleString()}`;
@@ -21,16 +23,19 @@ const MetricCard: React.FC<MetricCardProps> = ({ metric, onEdit, onDelete }) => 
 
   const getChangeColor = (changePercent?: number) => {
     if (!changePercent) return 'text-gray-500';
-    return changePercent >= 0 ? 'text-red-600' : 'text-green-600';
+    return changePercent >= 0 ? 'text-green-600' : 'text-red-600';
   };
 
   const getChangeBgColor = (changePercent?: number) => {
     if (!changePercent) return 'bg-gray-100';
-    return changePercent >= 0 ? 'bg-red-100' : 'bg-green-100';
+    return changePercent >= 0 ? 'bg-green-100' : 'bg-red-100';
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
+    <div 
+      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow cursor-pointer"
+      onClick={() => onViewChart?.(metric)}
+    >
       <div className="flex justify-between items-start mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{metric.title}</h3>
         {metric.changePercent !== undefined && (

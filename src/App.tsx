@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useFirebaseMetrics } from './hooks/useFirebaseMetrics';
 import { initializeFirebaseData } from './utils/initializeFirebase';
-import { MonthlyMetricEntry } from './types';
+import { MonthlyMetricEntry, Metric } from './types';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Header from './components/Header';
 import SortableMetricCard from './components/SortableMetricCard';
 import EditCompanyMetricsModal from './components/EditCompanyMetricsModal';
 import SettingsModal from './components/SettingsModal';
+import ChartModal from './components/ChartModal';
 import Login from './components/Login';
 import ErrorBoundary from './ErrorBoundary';
 import TestPage from './TestPage';
@@ -31,6 +32,8 @@ function Dashboard() {
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isChartModalOpen, setIsChartModalOpen] = useState(false);
+  const [selectedMetric, setSelectedMetric] = useState<Metric | null>(null);
   const [selectedMonth, setSelectedMonth] = useState('October');
   const [selectedYear, setSelectedYear] = useState(2025);
   const sensors = useSensors(
@@ -48,22 +51,40 @@ function Dashboard() {
     );
   };
 
+
   const handleSaveMetrics = async (entry: MonthlyMetricEntry) => {
     const existingEntry = monthlyEntries.find(
       e => e.month === entry.month && e.year === entry.year
     );
     
     if (existingEntry && existingEntry.id) {
+      // Update existing entry
       await updateMonthlyEntry(existingEntry.id, entry);
     } else {
+      // Check for duplicates before adding
+      const duplicateCheck = monthlyEntries.find(
+        e => e.month === entry.month && e.year === entry.year
+      );
+      
+      if (duplicateCheck) {
+        alert(`Data for ${entry.month} ${entry.year} already exists. Please edit the existing entry instead.`);
+        return;
+      }
+      
       await addMonthlyEntry(entry);
     }
     
     // Update metrics with new data
-    updateMetricsFromEntry(entry);
+    await updateMetricsFromEntry(entry);
+    
+    // Generate chart data after a short delay to ensure monthly entries are updated
+    setTimeout(() => {
+      generateChartDataFromEntries();
+    }, 100);
   };
 
-  const updateMetricsFromEntry = async (entry: MonthlyMetricEntry) => {
+  const updateMetricsFromEntry = useCallback(async (entry: MonthlyMetricEntry) => {
+    // Update the current value and trigger chart data generation
     for (const metric of metrics) {
       let newValue = metric.value;
       
@@ -88,13 +109,120 @@ function Dashboard() {
           break;
       }
       
-      if (newValue !== metric.value) {
-        // Use docId (Firebase document ID) for updates, fallback to id if docId not available
-        const documentId = metric.docId || metric.id;
-        await updateMetric(documentId, { value: newValue });
-      }
+      // Update the value
+      const documentId = metric.docId || metric.id;
+      await updateMetric(documentId, { 
+        value: newValue
+      });
     }
-  };
+    
+    // Generate chart data after updating values
+    setTimeout(() => {
+      generateChartDataFromEntries();
+    }, 100);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [metrics, updateMetric]);
+
+  // Simple chart data generation from monthly entries
+  const generateChartDataFromEntries = useCallback(async () => {
+    if (monthlyEntries.length === 0 || metrics.length === 0) return;
+
+    // Get unique entries and sort them chronologically
+    const uniqueEntries = monthlyEntries.reduce((acc, entry) => {
+      const key = `${entry.month}-${entry.year}`;
+      if (!acc[key]) {
+        acc[key] = entry;
+      }
+      return acc;
+    }, {} as Record<string, MonthlyMetricEntry>);
+    
+    const sortedEntries = Object.values(uniqueEntries).sort((a, b) => {
+      const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June',
+                          'July', 'August', 'September', 'October', 'November', 'December'];
+      if (a.year !== b.year) return a.year - b.year;
+      return monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month);
+    });
+
+    // Update each metric with real data
+    for (const metric of metrics) {
+      let chartData: any[] = [];
+      let changePercent = 0;
+      let currentValue = 0;
+
+      // Get data for this specific metric
+      switch (metric.id) {
+        case 'mrr':
+          const mrrData = sortedEntries.filter(e => e.mrr > 0);
+          chartData = mrrData.map(e => ({ date: `${e.month} ${e.year}`, value: e.mrr }));
+          currentValue = mrrData.length > 0 ? mrrData[mrrData.length - 1].mrr : 0;
+          if (mrrData.length >= 2) {
+            const latest = mrrData[mrrData.length - 1];
+            const previous = mrrData[mrrData.length - 2];
+            changePercent = previous.mrr > 0 ? ((latest.mrr - previous.mrr) / previous.mrr) * 100 : 0;
+          }
+          break;
+        case 'trial-to-paid':
+          const trialData = sortedEntries.filter(e => e.trialToPaid > 0);
+          chartData = trialData.map(e => ({ date: `${e.month} ${e.year}`, value: e.trialToPaid }));
+          currentValue = trialData.length > 0 ? trialData[trialData.length - 1].trialToPaid : 0;
+          if (trialData.length >= 2) {
+            const latest = trialData[trialData.length - 1];
+            const previous = trialData[trialData.length - 2];
+            changePercent = previous.trialToPaid > 0 ? ((latest.trialToPaid - previous.trialToPaid) / previous.trialToPaid) * 100 : 0;
+          }
+          break;
+        case 'customers':
+          const customerData = sortedEntries.filter(e => e.customers > 0);
+          chartData = customerData.map(e => ({ date: `${e.month} ${e.year}`, value: e.customers }));
+          currentValue = customerData.length > 0 ? customerData[customerData.length - 1].customers : 0;
+          if (customerData.length >= 2) {
+            const latest = customerData[customerData.length - 1];
+            const previous = customerData[customerData.length - 2];
+            changePercent = previous.customers > 0 ? ((latest.customers - previous.customers) / previous.customers) * 100 : 0;
+          }
+          break;
+        case 'average-ltv':
+          const ltvData = sortedEntries.filter(e => e.averageLtv > 0);
+          chartData = ltvData.map(e => ({ date: `${e.month} ${e.year}`, value: e.averageLtv }));
+          currentValue = ltvData.length > 0 ? ltvData[ltvData.length - 1].averageLtv : 0;
+          if (ltvData.length >= 2) {
+            const latest = ltvData[ltvData.length - 1];
+            const previous = ltvData[ltvData.length - 2];
+            changePercent = previous.averageLtv > 0 ? ((latest.averageLtv - previous.averageLtv) / previous.averageLtv) * 100 : 0;
+          }
+          break;
+        case 'new-trials':
+          const trialsData = sortedEntries.filter(e => e.newTrials > 0);
+          chartData = trialsData.map(e => ({ date: `${e.month} ${e.year}`, value: e.newTrials }));
+          currentValue = trialsData.length > 0 ? trialsData[trialsData.length - 1].newTrials : 0;
+          if (trialsData.length >= 2) {
+            const latest = trialsData[trialsData.length - 1];
+            const previous = trialsData[trialsData.length - 2];
+            changePercent = previous.newTrials > 0 ? ((latest.newTrials - previous.newTrials) / previous.newTrials) * 100 : 0;
+          }
+          break;
+        case 'churn-rate':
+          const churnData = sortedEntries.filter(e => e.churnRate > 0);
+          chartData = churnData.map(e => ({ date: `${e.month} ${e.year}`, value: e.churnRate }));
+          currentValue = churnData.length > 0 ? churnData[churnData.length - 1].churnRate : 0;
+          if (churnData.length >= 2) {
+            const latest = churnData[churnData.length - 1];
+            const previous = churnData[churnData.length - 2];
+            changePercent = previous.churnRate > 0 ? ((latest.churnRate - previous.churnRate) / previous.churnRate) * 100 : 0;
+          }
+          break;
+      }
+
+      // Update metric with real data
+      const documentId = metric.docId || metric.id;
+      await updateMetric(documentId, { 
+        value: currentValue,
+        data: chartData,
+        changePercent: changePercent
+      });
+    }
+  }, [monthlyEntries, metrics, updateMetric]);
+
 
   const handleDeleteMetric = async (metricId: string) => {
     // Find the metric to get its document ID
@@ -122,6 +250,11 @@ function Dashboard() {
 
   const handleSettings = () => {
     setIsSettingsModalOpen(true);
+  };
+
+  const handleViewChart = (metric: Metric) => {
+    setSelectedMetric(metric);
+    setIsChartModalOpen(true);
   };
 
   const handleLogout = async () => {
@@ -164,6 +297,7 @@ function Dashboard() {
                       key={metric.id}
                       metric={metric}
                       onDelete={handleDeleteMetric}
+                      onViewChart={handleViewChart}
                     />
                   ))}
                 </div>
@@ -200,6 +334,12 @@ function Dashboard() {
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
         onDeleteAllMetrics={deleteAllMetrics}
+      />
+      
+      <ChartModal
+        isOpen={isChartModalOpen}
+        onClose={() => setIsChartModalOpen(false)}
+        metric={selectedMetric}
       />
     </div>
   );
