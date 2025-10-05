@@ -3,12 +3,12 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEn
 import { SortableContext, rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useFirebaseMetrics } from './hooks/useFirebaseMetrics';
-import { initializeFirebaseData } from './utils/initializeFirebase';
 import { MonthlyMetricEntry, Metric } from './types';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Header from './components/Header';
 import SortableMetricCard from './components/SortableMetricCard';
 import EditCompanyMetricsModal from './components/EditCompanyMetricsModal';
+import AddMetricModal from './components/AddMetricModal';
 import SettingsModal from './components/SettingsModal';
 import ChartModal from './components/ChartModal';
 import SetGoalModal from './components/SetGoalModal';
@@ -24,6 +24,7 @@ function Dashboard() {
     monthlyEntries,
     loading,
     error,
+    addMetric,
     updateMetric,
     deleteMetric,
     addMonthlyEntry,
@@ -33,6 +34,7 @@ function Dashboard() {
   } = useFirebaseMetrics();
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddMetricModalOpen, setIsAddMetricModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
@@ -283,6 +285,18 @@ function Dashboard() {
     await updateMetric(metricId, { goal });
   };
 
+  const handleAddMetric = async (metric: Omit<Metric, 'id' | 'userId' | 'docId'>) => {
+    // Get the highest order number and add 1
+    const maxOrder = metrics.length > 0 
+      ? Math.max(...metrics.map(m => m.order || 0))
+      : -1;
+    
+    await addMetric({
+      ...metric,
+      order: maxOrder + 1,
+    });
+  };
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -296,7 +310,8 @@ function Dashboard() {
       <Header
         darkMode={darkMode}
         onToggleDarkMode={toggleDarkMode}
-        onAddMetric={() => setIsEditModalOpen(true)}
+        onAddMetric={() => setIsAddMetricModalOpen(true)}
+        onAddMonthlyData={() => setIsEditModalOpen(true)}
         onSettings={handleSettings}
         onLogout={handleLogout}
         user={currentUser}
@@ -377,6 +392,12 @@ function Dashboard() {
         metric={selectedMetric}
         onSaveGoal={handleSaveGoal}
       />
+      
+      <AddMetricModal
+        isOpen={isAddMetricModalOpen}
+        onClose={() => setIsAddMetricModalOpen(false)}
+        onAddMetric={handleAddMetric}
+      />
     </div>
   );
 }
@@ -384,10 +405,8 @@ function Dashboard() {
 function App() {
   const { currentUser } = useAuth();
 
-  // Initialize Firebase data on first load
-  useEffect(() => {
-    initializeFirebaseData();
-  }, []);
+  // User data is now automatically loaded by useFirebaseMetrics hook
+  // No global initialization needed
 
   // Show test page first to debug deployment
   if (window.location.search.includes('test=true')) {

@@ -6,6 +6,7 @@ export interface MetricDataPoint {
 export interface Metric {
   id: string;
   docId?: string; // Firebase document ID for updates
+  userId?: string; // User ID for data isolation (optional for forms, added by hooks)
   title: string;
   value: number;
   unit?: string;
@@ -19,6 +20,7 @@ export interface Metric {
 
 export interface MonthlyMetricEntry {
   id?: string;
+  userId?: string; // User ID for data isolation (optional for forms, added by hooks)
   month: string;
   year: number;
   mrr: number;

@@ -52,7 +52,14 @@ const MetricCard: React.FC<MetricCardProps> = ({ metric, onEdit, onDelete, onVie
       className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow"
     >
       <div className="flex justify-between items-start mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{metric.title}</h3>
+        <div className="flex items-baseline gap-2">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{metric.title}</h3>
+          {metric.goal !== undefined && metric.goal > 0 && (
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              (Goal: {formatValue(metric.goal, metric.unit)})
+            </span>
+          )}
+        </div>
         {metric.changePercent !== undefined && (
           <div className="text-right">
             <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getChangeBgColor(metric.changePercent)} dark:bg-opacity-20 ${getChangeColor(metric.changePercent)} dark:text-opacity-90`}>
@@ -69,11 +76,6 @@ const MetricCard: React.FC<MetricCardProps> = ({ metric, onEdit, onDelete, onVie
         <div className="text-3xl font-bold text-gray-900 dark:text-gray-50">
           {formatValue(metric.value, metric.unit)}
         </div>
-        {metric.goal !== undefined && metric.goal > 0 && (
-          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Goal: {formatValue(metric.goal, metric.unit)}
-          </div>
-        )}
       </div>
       
       <div 

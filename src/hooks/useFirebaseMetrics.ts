@@ -8,12 +8,16 @@ import {
   onSnapshot,
   getDocs,
   writeBatch,
+  query,
+  where,
   Timestamp 
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { Metric, MonthlyMetricEntry } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 export function useFirebaseMetrics() {
+  const { currentUser } = useAuth();
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [monthlyEntries, setMonthlyEntries] = useState<MonthlyMetricEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,8 +25,19 @@ export function useFirebaseMetrics() {
 
   // Load metrics
   useEffect(() => {
-    const unsubscribe = onSnapshot(
+    if (!currentUser) {
+      setMetrics([]);
+      setLoading(false);
+      return;
+    }
+
+    const metricsQuery = query(
       collection(db, 'metrics'),
+      where('userId', '==', currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(
+      metricsQuery,
       (snapshot) => {
         const metricsData = snapshot.docs.map(doc => ({
           id: doc.id, // Firebase document ID
@@ -49,13 +64,22 @@ export function useFirebaseMetrics() {
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [currentUser]);
 
   // Load monthly entries
   useEffect(() => {
-    // Simple query without any ordering to avoid index requirements
-    const unsubscribe = onSnapshot(
+    if (!currentUser) {
+      setMonthlyEntries([]);
+      return;
+    }
+
+    const monthlyEntriesQuery = query(
       collection(db, 'monthlyEntries'),
+      where('userId', '==', currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(
+      monthlyEntriesQuery,
       (snapshot) => {
         const entriesData = snapshot.docs.map(doc => ({
           id: doc.id,
@@ -85,13 +109,21 @@ export function useFirebaseMetrics() {
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [currentUser]);
 
-  const addMetric = async (metric: Omit<Metric, 'id'>) => {
+  const addMetric = async (metric: Omit<Metric, 'id' | 'userId'>) => {
+    if (!currentUser) return;
     try {
       setLoading(true);
+      
+      // Filter out undefined values - Firestore doesn't accept them
+      const cleanMetric = Object.fromEntries(
+        Object.entries(metric).filter(([_, value]) => value !== undefined)
+      );
+      
       await addDoc(collection(db, 'metrics'), {
-        ...metric,
+        ...cleanMetric,
+        userId: currentUser.uid,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now()
       });
@@ -106,8 +138,14 @@ export function useFirebaseMetrics() {
   const updateMetric = async (id: string, updates: Partial<Metric>) => {
     try {
       setLoading(true);
+      
+      // Filter out undefined values - Firestore doesn't accept them
+      const cleanUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([_, value]) => value !== undefined)
+      );
+      
       await updateDoc(doc(db, 'metrics', id), {
-        ...updates,
+        ...cleanUpdates,
         updatedAt: Timestamp.now()
       });
     } catch (err) {
@@ -130,11 +168,19 @@ export function useFirebaseMetrics() {
     }
   };
 
-  const addMonthlyEntry = async (entry: Omit<MonthlyMetricEntry, 'id'>) => {
+  const addMonthlyEntry = async (entry: Omit<MonthlyMetricEntry, 'id' | 'userId'>) => {
+    if (!currentUser) return;
     try {
       setLoading(true);
+      
+      // Filter out undefined values - Firestore doesn't accept them
+      const cleanEntry = Object.fromEntries(
+        Object.entries(entry).filter(([_, value]) => value !== undefined)
+      );
+      
       await addDoc(collection(db, 'monthlyEntries'), {
-        ...entry,
+        ...cleanEntry,
+        userId: currentUser.uid,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now()
       });
@@ -149,8 +195,14 @@ export function useFirebaseMetrics() {
   const updateMonthlyEntry = async (id: string, updates: Partial<MonthlyMetricEntry>) => {
     try {
       setLoading(true);
+      
+      // Filter out undefined values - Firestore doesn't accept them
+      const cleanUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([_, value]) => value !== undefined)
+      );
+      
       await updateDoc(doc(db, 'monthlyEntries', id), {
-        ...updates,
+        ...cleanUpdates,
         updatedAt: Timestamp.now()
       });
     } catch (err) {
@@ -174,11 +226,16 @@ export function useFirebaseMetrics() {
   };
 
   const deleteAllMetrics = async () => {
+    if (!currentUser) return;
     try {
       setLoading(true);
       
-      // Delete all metrics
-      const metricsSnapshot = await getDocs(collection(db, 'metrics'));
+      // Delete all metrics for current user only
+      const metricsQuery = query(
+        collection(db, 'metrics'),
+        where('userId', '==', currentUser.uid)
+      );
+      const metricsSnapshot = await getDocs(metricsQuery);
       if (!metricsSnapshot.empty) {
         const batch = writeBatch(db);
         metricsSnapshot.docs.forEach((docSnapshot) => {
@@ -187,8 +244,12 @@ export function useFirebaseMetrics() {
         await batch.commit();
       }
 
-      // Delete all monthly entries
-      const monthlySnapshot = await getDocs(collection(db, 'monthlyEntries'));
+      // Delete all monthly entries for current user only
+      const monthlyQuery = query(
+        collection(db, 'monthlyEntries'),
+        where('userId', '==', currentUser.uid)
+      );
+      const monthlySnapshot = await getDocs(monthlyQuery);
       if (!monthlySnapshot.empty) {
         const batch = writeBatch(db);
         monthlySnapshot.docs.forEach((docSnapshot) => {

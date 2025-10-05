@@ -5,28 +5,24 @@ import { Metric } from '../types';
 interface AddMetricModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddMetric: (metric: Omit<Metric, 'id'>) => void;
+  onAddMetric: (metric: Omit<Metric, 'id' | 'userId' | 'docId'>) => void;
 }
 
 const AddMetricModal: React.FC<AddMetricModalProps> = ({ isOpen, onClose, onAddMetric }) => {
   const [formData, setFormData] = useState({
     title: '',
     value: '',
-    unit: '',
-    changePercent: '',
-    changeTimeframe: 'Last 30 days'
+    unit: ''
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const newMetric: Omit<Metric, 'id'> = {
+    const newMetric: Omit<Metric, 'id' | 'userId' | 'docId'> = {
       title: formData.title,
       value: parseFloat(formData.value) || 0,
       unit: formData.unit || undefined,
-      changePercent: formData.changePercent ? parseFloat(formData.changePercent) : undefined,
-      changeTimeframe: formData.changeTimeframe || undefined,
-      data: generateInitialData(parseFloat(formData.value) || 0),
+      data: [], // Start with empty data - will be populated when monthly data is added
       color: '#3b82f6'
     };
 
@@ -34,25 +30,9 @@ const AddMetricModal: React.FC<AddMetricModalProps> = ({ isOpen, onClose, onAddM
     setFormData({
       title: '',
       value: '',
-      unit: '',
-      changePercent: '',
-      changeTimeframe: 'Last 30 days'
+      unit: ''
     });
     onClose();
-  };
-
-  const generateInitialData = (baseValue: number) => {
-    const months = [
-      'Jan 2025', 'Feb 2025', 'Mar 2025', 'Apr 2025', 'May 2025', 'Jun 2025',
-      'Jul 2025', 'Aug 2025', 'Sep 2025', 'Oct 2025', 'Nov 2025'
-    ];
-    
-    return months.map((month, index) => {
-      const trend = Math.sin((index / months.length) * Math.PI * 2) * 0.3;
-      const random = (Math.random() - 0.5) * 0.2;
-      const value = Math.max(0, baseValue * (1 + trend + random));
-      return { date: month, value: Math.round(value * 100) / 100 };
-    });
   };
 
   if (!isOpen) return null;
@@ -118,36 +98,8 @@ const AddMetricModal: React.FC<AddMetricModalProps> = ({ isOpen, onClose, onAddM
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Change %
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.changePercent}
-                onChange={(e) => setFormData({ ...formData, changePercent: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="0.00"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Timeframe
-              </label>
-              <select
-                value={formData.changeTimeframe}
-                onChange={(e) => setFormData({ ...formData, changeTimeframe: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="Last 7 days">Last 7 days</option>
-                <option value="Last 30 days">Last 30 days</option>
-                <option value="Last 90 days">Last 90 days</option>
-                <option value="Last year">Last year</option>
-              </select>
-            </div>
+          <div className="text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-md p-3">
+            <strong>Note:</strong> Charts and growth percentages will automatically populate when you add monthly data using the "Add Data" button.
           </div>
           
           <div className="flex justify-end space-x-3 pt-4">

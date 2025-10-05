@@ -1,11 +1,12 @@
 import React from 'react';
-import { BarChart3, Settings, Plus, Moon, Sun, LogOut, User } from 'lucide-react';
+import { BarChart3, Settings, Plus, Moon, Sun, LogOut, User, Calendar } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 
 interface HeaderProps {
   darkMode: boolean;
   onToggleDarkMode: () => void;
   onAddMetric: () => void;
+  onAddMonthlyData: () => void;
   onSettings: () => void;
   onLogout: () => void;
   user: FirebaseUser | null;
@@ -14,7 +15,8 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ 
   darkMode, 
   onToggleDarkMode, 
-  onAddMetric, 
+  onAddMetric,
+  onAddMonthlyData,
   onSettings,
   onLogout,
   user
@@ -39,11 +41,19 @@ const Header: React.FC<HeaderProps> = ({
           </button>
           
           <button
+            onClick={onAddMonthlyData}
+            className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-4 py-2 rounded-lg transition-colors border border-blue-600 dark:border-blue-400"
+          >
+            <Calendar className="h-4 w-4" />
+            <span>Add Data</span>
+          </button>
+          
+          <button
             onClick={onAddMetric}
             className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             <Plus className="h-4 w-4" />
-            <span>Add Metrics</span>
+            <span>Add Metric</span>
           </button>
 
           {/* User Info */}

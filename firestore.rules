@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns the document
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    // Metrics collection - users can only access their own metrics
+    match /metrics/{metricId} {
+      // Allow read if user is authenticated and document belongs to them
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      // Allow create if user is authenticated and setting their own userId
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      
+      // Allow update/delete if user owns the document
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Monthly entries collection - users can only access their own entries
+    match /monthlyEntries/{entryId} {
+      // Allow read if user is authenticated and document belongs to them
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      // Allow create if user is authenticated and setting their own userId
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      
+      // Allow update/delete if user owns the document
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
