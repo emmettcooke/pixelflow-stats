@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, TrendingUp, TrendingDown } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, Target } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Metric } from '../types';
 
@@ -7,9 +7,10 @@ interface ChartModalProps {
   isOpen: boolean;
   onClose: () => void;
   metric: Metric | null;
+  onSetGoal?: (metric: Metric) => void;
 }
 
-const ChartModal: React.FC<ChartModalProps> = ({ isOpen, onClose, metric }) => {
+const ChartModal: React.FC<ChartModalProps> = ({ isOpen, onClose, metric, onSetGoal }) => {
   if (!isOpen || !metric) return null;
 
   const formatValue = (value: number, unit?: string) => {
@@ -73,12 +74,24 @@ const ChartModal: React.FC<ChartModalProps> = ({ isOpen, onClose, metric }) => {
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{metric.changeTimeframe}</p>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            <X className="h-6 w-6 text-gray-500 dark:text-gray-400" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                onSetGoal?.(metric);
+                onClose();
+              }}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+            >
+              <Target className="h-4 w-4" />
+              {metric.goal ? 'Edit Goal' : 'Set Goal'}
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              <X className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+            </button>
+          </div>
         </div>
         
         <div className="p-6">

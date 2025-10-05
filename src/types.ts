@@ -14,6 +14,7 @@ export interface Metric {
   data: MetricDataPoint[];
   color?: string;
   order?: number;
+  goal?: number; // Optional goal value for this metric
 }
 
 export interface MonthlyMetricEntry {

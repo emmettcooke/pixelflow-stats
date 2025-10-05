@@ -11,6 +11,7 @@ import SortableMetricCard from './components/SortableMetricCard';
 import EditCompanyMetricsModal from './components/EditCompanyMetricsModal';
 import SettingsModal from './components/SettingsModal';
 import ChartModal from './components/ChartModal';
+import SetGoalModal from './components/SetGoalModal';
 import Login from './components/Login';
 import ErrorBoundary from './ErrorBoundary';
 import TestPage from './TestPage';
@@ -34,6 +35,7 @@ function Dashboard() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
+  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState<Metric | null>(null);
   const [selectedMonth, setSelectedMonth] = useState('October');
   const [selectedYear, setSelectedYear] = useState(2025);
@@ -272,6 +274,15 @@ function Dashboard() {
     setIsChartModalOpen(true);
   };
 
+  const handleSetGoal = (metric: Metric) => {
+    setSelectedMetric(metric);
+    setIsGoalModalOpen(true);
+  };
+
+  const handleSaveGoal = async (metricId: string, goal: number | undefined) => {
+    await updateMetric(metricId, { goal });
+  };
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -357,6 +368,14 @@ function Dashboard() {
         isOpen={isChartModalOpen}
         onClose={() => setIsChartModalOpen(false)}
         metric={selectedMetric}
+        onSetGoal={handleSetGoal}
+      />
+      
+      <SetGoalModal
+        isOpen={isGoalModalOpen}
+        onClose={() => setIsGoalModalOpen(false)}
+        metric={selectedMetric}
+        onSaveGoal={handleSaveGoal}
       />
     </div>
   );

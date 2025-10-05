@@ -29,7 +29,15 @@ export function useFirebaseMetrics() {
           docId: doc.id, // Keep Firebase document ID for updates
           ...doc.data()
         })) as unknown as Metric[];
-        setMetrics(metricsData);
+        
+        // Sort by order field
+        const sortedMetrics = metricsData.sort((a, b) => {
+          const orderA = a.order !== undefined ? a.order : 999;
+          const orderB = b.order !== undefined ? b.order : 999;
+          return orderA - orderB;
+        });
+        
+        setMetrics(sortedMetrics);
         setLoading(false);
         setError(null);
       },
