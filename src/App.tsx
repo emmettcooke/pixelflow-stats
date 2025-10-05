@@ -57,7 +57,7 @@ function Dashboard() {
   };
 
 
-  const handleSaveMetrics = async (entry: MonthlyMetricEntry) => {
+  const handleSaveMetrics = async (entry: MonthlyMetricEntry, customMetricValues?: Record<string, number>) => {
     const existingEntry = monthlyEntries.find(
       e => e.month === entry.month && e.year === entry.year
     );
@@ -81,6 +81,17 @@ function Dashboard() {
     
     // Update metrics with new data
     await updateMetricsFromEntry(entry);
+    
+    // Update custom metrics if provided
+    if (customMetricValues) {
+      for (const [metricId, value] of Object.entries(customMetricValues)) {
+        const metric = metrics.find(m => m.id === metricId);
+        if (metric) {
+          const documentId = metric.docId || metric.id;
+          await updateMetric(documentId, { value });
+        }
+      }
+    }
     
     // Generate chart data immediately after updating
     await generateChartDataFromEntries();
@@ -369,6 +380,7 @@ function Dashboard() {
         selectedYear={selectedYear}
         onMonthChange={setSelectedMonth}
         onYearChange={setSelectedYear}
+        metrics={metrics}
       />
       
       <SettingsModal

@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { MonthlyMetricEntry } from '../types';
+import { MonthlyMetricEntry, Metric } from '../types';
 
 interface EditCompanyMetricsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSaveMetrics: (entry: MonthlyMetricEntry) => void;
+  onSaveMetrics: (entry: MonthlyMetricEntry, customMetricValues?: Record<string, number>) => void;
   existingEntry?: MonthlyMetricEntry;
   selectedMonth: string;
   selectedYear: number;
   onMonthChange: (month: string) => void;
   onYearChange: (year: number) => void;
+  metrics: Metric[];
 }
 
 const EditCompanyMetricsModal: React.FC<EditCompanyMetricsModalProps> = ({ 
@@ -21,7 +22,8 @@ const EditCompanyMetricsModal: React.FC<EditCompanyMetricsModalProps> = ({
   selectedMonth,
   selectedYear,
   onMonthChange,
-  onYearChange
+  onYearChange,
+  metrics
 }) => {
   const [formData, setFormData] = useState<MonthlyMetricEntry>({
     month: selectedMonth,
@@ -33,6 +35,9 @@ const EditCompanyMetricsModal: React.FC<EditCompanyMetricsModalProps> = ({
     newTrials: 0,
     churnRate: 0
   });
+  
+  // Store custom metric values separately
+  const [customMetricValues, setCustomMetricValues] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (existingEntry) {
@@ -53,9 +58,14 @@ const EditCompanyMetricsModal: React.FC<EditCompanyMetricsModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSaveMetrics(formData);
+    onSaveMetrics(formData, customMetricValues);
     onClose();
   };
+  
+  // Get custom metrics (non-default ones)
+  const customMetrics = metrics.filter(m => 
+    !['mrr', 'trial-to-paid', 'customers', 'average-ltv', 'new-trials', 'churn-rate'].includes(m.id)
+  );
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -144,6 +154,26 @@ const EditCompanyMetricsModal: React.FC<EditCompanyMetricsModalProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              
+              {/* Custom Metrics - Left Column */}
+              {customMetrics.slice(0, Math.ceil(customMetrics.length / 2)).map((metric) => (
+                <div key={metric.id}>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {metric.title} {metric.unit && `(${metric.unit})`}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={customMetricValues[metric.id] || metric.value || 0}
+                    onChange={(e) => setCustomMetricValues({ 
+                      ...customMetricValues, 
+                      [metric.id]: parseFloat(e.target.value) || 0 
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              ))}
             </div>
 
             {/* Right Column */}
@@ -210,6 +240,26 @@ const EditCompanyMetricsModal: React.FC<EditCompanyMetricsModalProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              
+              {/* Custom Metrics - Right Column */}
+              {customMetrics.slice(Math.ceil(customMetrics.length / 2)).map((metric) => (
+                <div key={metric.id}>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {metric.title} {metric.unit && `(${metric.unit})`}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={customMetricValues[metric.id] || metric.value || 0}
+                    onChange={(e) => setCustomMetricValues({ 
+                      ...customMetricValues, 
+                      [metric.id]: parseFloat(e.target.value) || 0 
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              ))}
             </div>
           </div>
           
