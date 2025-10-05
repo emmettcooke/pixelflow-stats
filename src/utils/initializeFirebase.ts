@@ -1,4 +1,4 @@
-import { collection, getDocs, deleteDoc, doc, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, doc, writeBatch, addDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 // Track initialization to prevent multiple calls
@@ -65,6 +65,80 @@ export async function resetMetricsCollection() {
   }
 }
 
+// Function to create empty metric cards
+export async function createEmptyMetrics() {
+  try {
+    console.log('Creating empty metric cards...');
+    
+    const emptyMetrics = [
+      {
+        id: 'mrr',
+        title: 'MRR',
+        value: 0,
+        unit: '$',
+        data: [],
+        color: '#3b82f6',
+        order: 0
+      },
+      {
+        id: 'trial-to-paid',
+        title: 'Trial to Paid',
+        value: 0,
+        unit: '%',
+        data: [],
+        color: '#8b5cf6',
+        order: 1
+      },
+      {
+        id: 'customers',
+        title: 'Customers',
+        value: 0,
+        data: [],
+        color: '#10b981',
+        order: 2
+      },
+      {
+        id: 'average-ltv',
+        title: 'Average LTV',
+        value: 0,
+        unit: '$',
+        data: [],
+        color: '#3b82f6',
+        order: 3
+      },
+      {
+        id: 'new-trials',
+        title: 'New Trials',
+        value: 0,
+        data: [],
+        color: '#f59e0b',
+        order: 4
+      },
+      {
+        id: 'churn-rate',
+        title: 'Churn Rate',
+        value: 0,
+        unit: '%',
+        data: [],
+        color: '#ef4444',
+        order: 5
+      }
+    ];
+
+    for (const metric of emptyMetrics) {
+      await addDoc(collection(db, 'metrics'), {
+        ...metric,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+    }
+    
+    console.log('Empty metric cards created successfully!');
+  } catch (error) {
+    console.error('Error creating empty metrics:', error);
+  }
+}
+
 export async function initializeFirebaseData() {
   // Prevent multiple initializations
   if (isInitialized) {
@@ -77,7 +151,8 @@ export async function initializeFirebaseData() {
     const metricsSnapshot = await getDocs(collection(db, 'metrics'));
     
     if (metricsSnapshot.empty) {
-      console.log('No metrics found. Dashboard will start with empty state.');
+      console.log('No metrics found. Creating empty metric cards...');
+      await createEmptyMetrics();
     } else {
       console.log('Firebase already has data, checking for duplicates...');
       
@@ -89,6 +164,7 @@ export async function initializeFirebaseData() {
       if (updatedSnapshot.size > 6) {
         console.log('Too many metrics detected, resetting collection...');
         await resetMetricsCollection();
+        await createEmptyMetrics();
       }
     }
     

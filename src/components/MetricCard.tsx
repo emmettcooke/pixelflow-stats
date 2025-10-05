@@ -57,42 +57,41 @@ const MetricCard: React.FC<MetricCardProps> = ({ metric, onEdit, onDelete, onVie
       </div>
       
       <div className="h-20">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={metric.data}>
-            <Line 
-              type="monotone" 
-              dataKey="value" 
-              stroke={metric.color || '#3b82f6'} 
-              strokeWidth={2}
-              dot={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        {metric.data && metric.data.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={metric.data}>
+              <Line 
+                type="monotone" 
+                dataKey="value" 
+                stroke={metric.color || '#3b82f6'} 
+                strokeWidth={2}
+                dot={metric.data.length <= 5}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-600 text-sm">
+            No data yet
+          </div>
+        )}
       </div>
       
-      {/* Last 6 months display at the bottom */}
-      <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
-        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-          {(() => {
-            const months = [];
-            const currentDate = new Date();
-            for (let i = 5; i >= 0; i--) {
-              const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-              months.push(
-                <div key={i} className="text-center">
-                  <div className="font-medium">
-                    {date.toLocaleDateString('en-US', { month: 'short' })}
-                  </div>
-                  <div className="text-gray-400 dark:text-gray-500">
-                    {date.getFullYear()}
-                  </div>
+      {/* Display months with actual data at the bottom */}
+      {metric.data && metric.data.length > 0 && (
+        <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+            {metric.data.map((dataPoint, index) => {
+              const [month, year] = dataPoint.date.split(' ');
+              return (
+                <div key={index} className="text-center">
+                  <div className="font-medium">{month}</div>
+                  <div className="text-gray-400 dark:text-gray-500">{year}</div>
                 </div>
               );
-            }
-            return months;
-          })()}
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
