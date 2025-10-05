@@ -18,6 +18,7 @@ import TestPage from './TestPage';
 
 function Dashboard() {
   const [darkMode, setDarkMode] = useLocalStorage('darkMode', false);
+  const [compactView, setCompactView] = useLocalStorage('compactView', false);
   const { currentUser, logout } = useAuth();
   const {
     metrics,
@@ -51,6 +52,10 @@ function Dashboard() {
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
+  };
+
+  const toggleCompactView = () => {
+    setCompactView(!compactView);
   };
 
   // Find existing monthly entry for the selected month/year
@@ -394,6 +399,8 @@ function Dashboard() {
         onSettings={handleSettings}
         onLogout={handleLogout}
         user={currentUser}
+        compactView={compactView}
+        onToggleCompactView={toggleCompactView}
       />
       
       <main className="p-6">
@@ -411,13 +418,18 @@ function Dashboard() {
           <>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={metrics.map(m => m.id)} strategy={rectSortingStrategy}>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className={`grid grid-cols-1 ${
+                  compactView 
+                    ? 'md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4' 
+                    : 'md:grid-cols-2 lg:grid-cols-3 gap-6'
+                }`}>
                   {metrics.map((metric) => (
                     <SortableMetricCard
                       key={metric.id}
                       metric={metric}
                       onDelete={handleDeleteMetric}
                       onViewChart={handleViewChart}
+                      compact={compactView}
                     />
                   ))}
                 </div>

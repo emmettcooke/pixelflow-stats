@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, Settings, Moon, Sun, LogOut, User, Calendar } from 'lucide-react';
+import { BarChart3, Settings, Moon, Sun, LogOut, User, Calendar, LayoutGrid, Grid2X2 } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 
 interface HeaderProps {
@@ -10,6 +10,8 @@ interface HeaderProps {
   onSettings: () => void;
   onLogout: () => void;
   user: FirebaseUser | null;
+  compactView: boolean;
+  onToggleCompactView: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -19,7 +21,9 @@ const Header: React.FC<HeaderProps> = ({
   onAddMonthlyData,
   onSettings,
   onLogout,
-  user
+  user,
+  compactView,
+  onToggleCompactView
 }) => {
   return (
     <header className="bg-white dark:bg-[#0f172a] border-b border-gray-200 dark:border-gray-800 px-6 py-4">
@@ -32,6 +36,18 @@ const Header: React.FC<HeaderProps> = ({
         </div>
         
         <div className="flex items-center space-x-4">
+          <button
+            onClick={onToggleCompactView}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            title={compactView ? 'Large view' : 'Compact view'}
+          >
+            {compactView ? (
+              <Grid2X2 className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+            ) : (
+              <LayoutGrid className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+            )}
+          </button>
+
           <button
             onClick={onSettings}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
