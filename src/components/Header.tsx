@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, Settings, Plus, Moon, Sun, LogOut, User, Calendar } from 'lucide-react';
+import { BarChart3, Settings, Moon, Sun, LogOut, User, Calendar } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 
 interface HeaderProps {
@@ -52,8 +52,8 @@ const Header: React.FC<HeaderProps> = ({
             onClick={onAddMetric}
             className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
-            <Plus className="h-4 w-4" />
-            <span>Add Metric</span>
+            <Settings className="h-4 w-4" />
+            <span>Manage Metrics</span>
           </button>
 
           {/* User Info */}

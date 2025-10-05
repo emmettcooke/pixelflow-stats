@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { MonthlyMetricEntry, Metric } from '../types';
+import { MonthlyMetricEntry, Metric, CustomMetricEntry } from '../types';
 
 interface EditCompanyMetricsModalProps {
   isOpen: boolean;
@@ -12,6 +12,7 @@ interface EditCompanyMetricsModalProps {
   onMonthChange: (month: string) => void;
   onYearChange: (year: number) => void;
   metrics: Metric[];
+  customMetricEntries: CustomMetricEntry[];
 }
 
 const EditCompanyMetricsModal: React.FC<EditCompanyMetricsModalProps> = ({ 
@@ -23,7 +24,8 @@ const EditCompanyMetricsModal: React.FC<EditCompanyMetricsModalProps> = ({
   selectedYear,
   onMonthChange,
   onYearChange,
-  metrics
+  metrics,
+  customMetricEntries
 }) => {
   const [formData, setFormData] = useState<MonthlyMetricEntry>({
     month: selectedMonth,
@@ -54,7 +56,22 @@ const EditCompanyMetricsModal: React.FC<EditCompanyMetricsModalProps> = ({
         churnRate: 0
       });
     }
-  }, [existingEntry, isOpen, selectedMonth, selectedYear]);
+    
+    // Load existing custom metric values for this month/year
+    const customValues: Record<string, number> = {};
+    customMetrics.forEach(metric => {
+      const existingValue = customMetricEntries.find(
+        e => e.metricId === metric.id && e.month === selectedMonth && e.year === selectedYear
+      );
+      if (existingValue) {
+        customValues[metric.id] = existingValue.value;
+      } else {
+        customValues[metric.id] = 0;
+      }
+    });
+    setCustomMetricValues(customValues);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existingEntry, isOpen, selectedMonth, selectedYear, customMetricEntries]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -13,13 +13,14 @@ import {
   Timestamp 
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { Metric, MonthlyMetricEntry } from '../types';
+import { Metric, MonthlyMetricEntry, CustomMetricEntry } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 
 export function useFirebaseMetrics() {
   const { currentUser } = useAuth();
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [monthlyEntries, setMonthlyEntries] = useState<MonthlyMetricEntry[]>([]);
+  const [customMetricEntries, setCustomMetricEntries] = useState<CustomMetricEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,6 +105,37 @@ export function useFirebaseMetrics() {
       },
       (err) => {
         console.error('Error loading monthly entries:', err);
+        setError(err.message);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  // Load custom metric entries
+  useEffect(() => {
+    if (!currentUser) {
+      setCustomMetricEntries([]);
+      return;
+    }
+
+    const customEntriesQuery = query(
+      collection(db, 'customMetricEntries'),
+      where('userId', '==', currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(
+      customEntriesQuery,
+      (snapshot) => {
+        const entriesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as unknown as CustomMetricEntry[];
+        
+        setCustomMetricEntries(entriesData);
+      },
+      (err) => {
+        console.error('Error loading custom metric entries:', err);
         setError(err.message);
       }
     );
@@ -258,6 +290,20 @@ export function useFirebaseMetrics() {
         await batch.commit();
       }
 
+      // Delete all custom metric entries for current user only
+      const customEntriesQuery = query(
+        collection(db, 'customMetricEntries'),
+        where('userId', '==', currentUser.uid)
+      );
+      const customEntriesSnapshot = await getDocs(customEntriesQuery);
+      if (!customEntriesSnapshot.empty) {
+        const batch = writeBatch(db);
+        customEntriesSnapshot.docs.forEach((docSnapshot) => {
+          batch.delete(docSnapshot.ref);
+        });
+        await batch.commit();
+      }
+
       console.log('All metrics and monthly entries deleted successfully');
     } catch (err) {
       console.error('Error deleting all data:', err);
@@ -267,9 +313,65 @@ export function useFirebaseMetrics() {
     }
   };
 
+  const addCustomMetricEntry = async (entry: Omit<CustomMetricEntry, 'id' | 'userId'>) => {
+    if (!currentUser) return;
+    try {
+      setLoading(true);
+      
+      const cleanEntry = Object.fromEntries(
+        Object.entries(entry).filter(([_, value]) => value !== undefined)
+      );
+      
+      await addDoc(collection(db, 'customMetricEntries'), {
+        ...cleanEntry,
+        userId: currentUser.uid,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
+      });
+    } catch (err) {
+      console.error('Error adding custom metric entry:', err);
+      setError(err instanceof Error ? err.message : 'Failed to add custom metric entry');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateCustomMetricEntry = async (id: string, updates: Partial<CustomMetricEntry>) => {
+    try {
+      setLoading(true);
+      
+      const cleanUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([_, value]) => value !== undefined)
+      );
+      
+      await updateDoc(doc(db, 'customMetricEntries', id), {
+        ...cleanUpdates,
+        updatedAt: Timestamp.now()
+      });
+    } catch (err) {
+      console.error('Error updating custom metric entry:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update custom metric entry');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteCustomMetricEntry = async (id: string) => {
+    try {
+      setLoading(true);
+      await deleteDoc(doc(db, 'customMetricEntries', id));
+    } catch (err) {
+      console.error('Error deleting custom metric entry:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete custom metric entry');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     metrics,
     monthlyEntries,
+    customMetricEntries,
     loading,
     error,
     addMetric,
@@ -278,6 +380,9 @@ export function useFirebaseMetrics() {
     addMonthlyEntry,
     updateMonthlyEntry,
     deleteMonthlyEntry,
-    deleteAllMetrics
+    deleteAllMetrics,
+    addCustomMetricEntry,
+    updateCustomMetricEntry,
+    deleteCustomMetricEntry
   };
 }

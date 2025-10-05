@@ -31,6 +31,16 @@ export interface MonthlyMetricEntry {
   churnRate: number;
 }
 
+// Store monthly data for custom metrics
+export interface CustomMetricEntry {
+  id?: string;
+  userId?: string;
+  metricId: string; // ID of the custom metric this data belongs to
+  month: string;
+  year: number;
+  value: number;
+}
+
 export interface DashboardState {
   metrics: Metric[];
   monthlyEntries: MonthlyMetricEntry[];

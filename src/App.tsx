@@ -8,7 +8,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Header from './components/Header';
 import SortableMetricCard from './components/SortableMetricCard';
 import EditCompanyMetricsModal from './components/EditCompanyMetricsModal';
-import AddMetricModal from './components/AddMetricModal';
+import ManageMetricsModal from './components/ManageMetricsModal';
 import SettingsModal from './components/SettingsModal';
 import ChartModal from './components/ChartModal';
 import SetGoalModal from './components/SetGoalModal';
@@ -22,6 +22,7 @@ function Dashboard() {
   const {
     metrics,
     monthlyEntries,
+    customMetricEntries,
     loading,
     error,
     addMetric,
@@ -30,11 +31,14 @@ function Dashboard() {
     addMonthlyEntry,
     updateMonthlyEntry,
     deleteMonthlyEntry,
-    deleteAllMetrics
+    deleteAllMetrics,
+    addCustomMetricEntry,
+    updateCustomMetricEntry,
+    deleteCustomMetricEntry
   } = useFirebaseMetrics();
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isAddMetricModalOpen, setIsAddMetricModalOpen] = useState(false);
+  const [isManageMetricsModalOpen, setIsManageMetricsModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
@@ -82,13 +86,25 @@ function Dashboard() {
     // Update metrics with new data
     await updateMetricsFromEntry(entry);
     
-    // Update custom metrics if provided
+    // Save custom metric entries if provided
     if (customMetricValues) {
       for (const [metricId, value] of Object.entries(customMetricValues)) {
-        const metric = metrics.find(m => m.id === metricId);
-        if (metric) {
-          const documentId = metric.docId || metric.id;
-          await updateMetric(documentId, { value });
+        // Check if entry already exists for this metric/month/year
+        const existingCustomEntry = customMetricEntries.find(
+          e => e.metricId === metricId && e.month === entry.month && e.year === entry.year
+        );
+        
+        if (existingCustomEntry && existingCustomEntry.id) {
+          // Update existing entry
+          await updateCustomMetricEntry(existingCustomEntry.id, { value });
+        } else {
+          // Add new entry
+          await addCustomMetricEntry({
+            metricId,
+            month: entry.month,
+            year: entry.year,
+            value
+          });
         }
       }
     }
@@ -160,7 +176,49 @@ function Dashboard() {
       let changePercent = 0;
       let currentValue = 0;
 
-      // Get data for this specific metric
+      // Check if this is a custom metric (not in the default 6)
+      const isCustomMetric = !['mrr', 'trial-to-paid', 'customers', 'average-ltv', 'new-trials', 'churn-rate'].includes(metric.id);
+      
+      if (isCustomMetric) {
+        // Handle custom metrics
+        const metricEntries = customMetricEntries.filter(e => e.metricId === metric.id);
+        
+        if (metricEntries.length > 0) {
+          // Sort entries chronologically
+          const sortedMetricEntries = metricEntries.sort((a, b) => {
+            const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June',
+                                'July', 'August', 'September', 'October', 'November', 'December'];
+            if (a.year !== b.year) return a.year - b.year;
+            return monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month);
+          });
+          
+          // Filter out zero values
+          const nonZeroEntries = sortedMetricEntries.filter(e => e.value > 0);
+          
+          if (nonZeroEntries.length > 0) {
+            chartData = nonZeroEntries.map(e => ({ date: `${e.month} ${e.year}`, value: e.value }));
+            currentValue = nonZeroEntries[nonZeroEntries.length - 1].value;
+            
+            // Calculate change percent if we have at least 2 data points
+            if (nonZeroEntries.length >= 2) {
+              const latest = nonZeroEntries[nonZeroEntries.length - 1];
+              const previous = nonZeroEntries[nonZeroEntries.length - 2];
+              changePercent = previous.value > 0 ? ((latest.value - previous.value) / previous.value) * 100 : 0;
+            }
+          }
+        }
+        
+        // Update the custom metric with its data
+        const documentId = metric.docId || metric.id;
+        await updateMetric(documentId, { 
+          value: currentValue,
+          data: chartData,
+          changePercent: changePercent
+        });
+        continue; // Skip to next metric
+      }
+
+      // Get data for default metrics
       switch (metric.id) {
         case 'mrr':
           const mrrData = sortedEntries.filter(e => e.mrr > 0);
@@ -232,12 +290,12 @@ function Dashboard() {
         changePercent: changePercent
       });
     }
-  }, [monthlyEntries, metrics, updateMetric]);
+  }, [monthlyEntries, metrics, customMetricEntries, updateMetric]);
 
   // Auto-regenerate charts when monthly entries change (but only after initial load)
   const [hasInitialized, setHasInitialized] = useState(false);
   useEffect(() => {
-    if (monthlyEntries.length > 0 && metrics.length > 0) {
+    if ((monthlyEntries.length > 0 || customMetricEntries.length > 0) && metrics.length > 0) {
       if (hasInitialized) {
         // Only regenerate if we've already initialized (prevents first load issues)
         generateChartDataFromEntries();
@@ -247,13 +305,23 @@ function Dashboard() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [monthlyEntries.length, metrics.length]);
+  }, [monthlyEntries.length, metrics.length, customMetricEntries.length]);
 
   const handleDeleteMetric = async (metricId: string) => {
     // Find the metric to get its document ID
     const metric = metrics.find(m => m.id === metricId);
     if (metric) {
       const documentId = metric.docId || metric.id;
+      
+      // Delete all custom metric entries for this metric
+      const entriesToDelete = customMetricEntries.filter(e => e.metricId === metricId);
+      for (const entry of entriesToDelete) {
+        if (entry.id) {
+          await deleteCustomMetricEntry(entry.id);
+        }
+      }
+      
+      // Delete the metric itself
       await deleteMetric(documentId);
     }
   };
@@ -321,7 +389,7 @@ function Dashboard() {
       <Header
         darkMode={darkMode}
         onToggleDarkMode={toggleDarkMode}
-        onAddMetric={() => setIsAddMetricModalOpen(true)}
+        onAddMetric={() => setIsManageMetricsModalOpen(true)}
         onAddMonthlyData={() => setIsEditModalOpen(true)}
         onSettings={handleSettings}
         onLogout={handleLogout}
@@ -360,7 +428,7 @@ function Dashboard() {
               <div className="text-center py-12">
                 <div className="text-gray-500 text-lg mb-4">No metrics yet</div>
                 <button
-                  onClick={() => setIsEditModalOpen(true)}
+                  onClick={() => setIsManageMetricsModalOpen(true)}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
                 >
                   Add Your First Metric
@@ -381,6 +449,7 @@ function Dashboard() {
         onMonthChange={setSelectedMonth}
         onYearChange={setSelectedYear}
         metrics={metrics}
+        customMetricEntries={customMetricEntries}
       />
       
       <SettingsModal
@@ -405,10 +474,13 @@ function Dashboard() {
         onSaveGoal={handleSaveGoal}
       />
       
-      <AddMetricModal
-        isOpen={isAddMetricModalOpen}
-        onClose={() => setIsAddMetricModalOpen(false)}
+      <ManageMetricsModal
+        isOpen={isManageMetricsModalOpen}
+        onClose={() => setIsManageMetricsModalOpen(false)}
         onAddMetric={handleAddMetric}
+        onUpdateMetric={updateMetric}
+        onDeleteMetric={handleDeleteMetric}
+        metrics={metrics}
       />
     </div>
   );
